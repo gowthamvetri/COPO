@@ -86,10 +86,10 @@ const Overview = () => {
               setBatchId(e.target.value);
             }}
           >
-            {allBatches.map(({ _id, batchName }) => {
+            {allBatches.map(({ _id, name }) => {
               return (
                 <option key={_id} value={_id}>
-                  {batchName}
+                  {name}
                 </option>
               );
             })}

@@ -48,13 +48,37 @@ const Attainment = () => {
         const sheetName = workbook.SheetNames[0];
         const worksheet = workbook.Sheets[sheetName];
 
-        const jsonData = XLSX.utils.sheet_to_json(worksheet);
+        // Read with header row
+        const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
 
-        const processedData = jsonData.map((row) => ({
-          registrationNumber: row["Registration Number"],
-          studentsName: row["Student Name"],
-        }));
+        console.log("Raw Excel data:", jsonData);
 
+        // First row is headers, so we skip it and process from row 1 onwards
+        const headers = jsonData[0];
+        console.log("Headers:", headers);
+
+        // Find the column indices for Registration Number and Student Name
+        const regNumIndex = headers.findIndex(h => 
+          h && (h.toString().toLowerCase().includes('registration') || 
+                h.toString().toLowerCase().includes('registratic'))
+        );
+        const studentNameIndex = headers.findIndex(h => 
+          h && h.toString().toLowerCase().includes('student')
+        );
+
+        console.log("Registration Number column index:", regNumIndex);
+        console.log("Student Name column index:", studentNameIndex);
+
+        const processedData = jsonData.slice(1).map((row) => {
+          if (!row || row.length === 0) return null;
+          
+          return {
+            registrationNumber: regNumIndex >= 0 ? row[regNumIndex] : row[0],
+            studentName: studentNameIndex >= 0 ? row[studentNameIndex] : row[1],
+          };
+        }).filter(row => row && (row.registrationNumber || row.studentName));
+
+        console.log("Processed data:", processedData);
         setStudentsData(processedData);
         addStudents(processedData);
       };
@@ -100,8 +124,8 @@ const Attainment = () => {
           <h2 className='text-green-700'>Select batch</h2>
           <select className='w-50 border rounded p-2 -mt-1' value={batchId} onChange={(e)=>{setBatchId(e.target.value)}}>
             {
-                allBatches.map(({_id,batchName})=> {
-                    return <option value={_id}>{batchName}</option>
+                allBatches.map(({_id,name})=> {
+                    return <option value={_id}>{name}</option>
                 })
             }
           </select>
@@ -118,22 +142,26 @@ const Attainment = () => {
       </div>
       <div className="mt-6">
         <h3 className="text-lg font-bold mb-2">Extracted Data</h3>
-        <table className="min-w-full border border-gray-300 bg-white rounded-lg shadow-md">
-          <thead className="bg-gray-200 text-gray-700">
-            <tr>
-              <th className="px-6 py-3 border-b-2">Registration Number</th>
-              <th className="px-6 py-3 border-b-2">Student Name</th>
-            </tr>
-          </thead>
-          <tbody>
-            {studentsData.map((row, idx) => (
-              <tr key={idx} className="hover:bg-gray-100">
-                <td className="px-6 py-3 border-b">{row.registrationNumber}</td>
-                <td className="px-6 py-3 border-b">{row.studentName}</td>
+        {studentsData.length === 0 ? (
+          <p className="text-gray-500">No data uploaded yet. Please upload an Excel file.</p>
+        ) : (
+          <table className="min-w-full border border-gray-300 bg-white rounded-lg shadow-md">
+            <thead className="bg-gray-200 text-gray-700">
+              <tr>
+                <th className="px-6 py-3 border-b-2">Registration Number</th>
+                <th className="px-6 py-3 border-b-2">Student Name</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {studentsData.map((row, idx) => (
+                <tr key={idx} className="hover:bg-gray-100">
+                  <td className="px-6 py-3 border-b">{row.registrationNumber || 'N/A'}</td>
+                  <td className="px-6 py-3 border-b">{row.studentName || 'N/A'}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
       </div>
     </>
     

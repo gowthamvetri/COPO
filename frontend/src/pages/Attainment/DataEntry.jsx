@@ -46,9 +46,12 @@ const DataEntry = () => {
 
   const getAllSubjects = async () => {
     
-    try {
+    if (!batchId) {
+      console.log("BatchId is not set yet, skipping getAllSubjects");
+      return;
+    }
 
-      
+    try {
       const token = localStorage.getItem("token");
       console.log("token from client Side : " + token);
       console.log("batchId from client Side : " + batchId);
@@ -79,16 +82,28 @@ const DataEntry = () => {
   const [courseNumber, setCourseNumber] = useState([]);
 
   const getSubjects = () => {
-    const names = allBatch.map((subject) => subject.courseName);
-    const cono = allBatch.map((subject) => subject.coNo);
+    if (!allBatch || allBatch.length === 0) {
+      console.log("No batch data available yet");
+      return;
+    }
+    
+    const names = allBatch.map((subject) => subject.courseName || '').filter(name => name);
+    const cono = allBatch.map((subject) => subject.courseCode || subject.coNo || '').filter(code => code);
     setCourseNumber(cono);
     setAllSubjects(names);
 
   };
   useEffect(() => {
-    getAllSubjects();
-    getSubjects();
+    if (batchId) {
+      getAllSubjects();
+    }
   }, [batchId]);
+
+  useEffect(() => {
+    if (allBatch && allBatch.length > 0) {
+      getSubjects();
+    }
+  }, [allBatch]);
 
   // -------------------------------------------------//
   // End of Subjects \\
@@ -154,6 +169,11 @@ const DataEntry = () => {
 
 //Students-data Payload
   const getStudentsData = async () => {
+    if (!batchId) {
+      console.log("BatchId is not set yet, skipping getStudentsData");
+      return;
+    }
+
     try {
       const token = localStorage.getItem("token");
       console.log("token from client Side : " + token);
@@ -166,7 +186,6 @@ const DataEntry = () => {
 
       if (response.data && response.data.studentsData) {
         setStudentsData(response.data.studentsData);
-        getStudentsArray();
       }
     } catch (error) {
       console.error("Error fetching students' data:", error);
@@ -175,20 +194,33 @@ const DataEntry = () => {
 
   const [studentsArray, setStudentsArray] = useState([]);
 
-  const getStudentsArray = () => {
-    studentsData.map((object, idx) => {
-      setStudentsArray(object.studentsData);
-    });
-  };
+  useEffect(() => {
+    if (studentsData && studentsData.length > 0) {
+      // Get the studentsData array from the first object
+      const students = studentsData[0]?.studentsData || [];
+      console.log("Setting studentsArray:", students);
+      setStudentsArray(students);
+      
+      // Show table when students data is loaded
+      if (students.length > 0) {
+        showtable(true);
+      }
+    }
+  }, [studentsData]);
 
   // console.log("Students Data : " + JSON.stringify(studentsArray, null, 2));
   
 
   useEffect(() => {
-    getStudentsData();
+    if (batchId) {
+      getStudentsData();
+    }
+  }, [batchId]);
+
+  useEffect(() => {
     setStudentsCount(studentsArray.length);
     console.log("StudentsCount",studentsCount);
-  }, [batchId]);
+  }, [studentsArray]);
 
   // End of Students-data payload ------------------------------\\\
 
@@ -384,6 +416,9 @@ const DataEntry = () => {
         rowIdx += 1;
         console.log("Row Index : ", CO1);
       }
+      
+      // Show table after file upload
+      showtable(true);
     };
    
   };
@@ -593,32 +628,48 @@ const DataEntry = () => {
 
   const [updateco, setupdateco] = useState([]);
   const fetchupdateco = async () => {
+    if (!batchId || !subjects[subjectId]) {
+      console.log("BatchId or subject is not set yet, skipping fetchupdateco");
+      return;
+    }
+
     try {
       const response = await axiosInstance.get(
-        `/getsubjectCo/${batchId}/${subjects[subjectId]}`
+        `/getSubjectCo/${batchId}/${subjects[subjectId]}`
       );
       if (response.data && response.data.subjectCOData) {
         console.log(
           "updaetco from server fetched data" +
-            JSON.stringify(subjectCOData, null, 2)
+            JSON.stringify(response.data.subjectCOData, null, 2)
         );
-        setupdateco(subjectCOData);
+        setupdateco(response.data.subjectCOData);
+        
+        // Show table when CO data is loaded from database
+        if (response.data.subjectCOData.length > 0) {
+          showtable(true);
+        }
       }
     } catch (error) {
       console.log("Erro from fetchupdatco " + error);
     }
   };
 
-  console.log("Fetched updateco data:", subjectCOData);
+  console.log("Fetched updateco data:", updateco);
 
   useEffect(() => {
     console.log("Fetched updateco data:", updateco);
     console.log("The average", avgs);
     console.log("The Max-average", maxavg);
     console.log("The Below-average", belowavg);
-    fetchupdateco();
+    
+    if (batchId && subjects[subjectId]) {
+      fetchupdateco();
+    }
+  }, [batchId, subjectId, subjects]);
+
+  useEffect(() => {
     setStudentsCount(studentsArray.length);
-  }, [studentsArray, updateco, avgs, maxavg, belowavg]);
+  }, [studentsArray]);
 
   const [table, showtable] = useState(false);
   
@@ -789,8 +840,8 @@ const DataEntry = () => {
               setBatchId(e.target.value);
             }}
           >
-            {allBatches.map(({ _id, batchName }) => {
-              return <option value={_id}>{batchName}</option>;
+            {allBatches.map(({ _id, name }) => {
+              return <option value={_id}>{name}</option>;
             })}
           </select>
         </div>
@@ -1137,7 +1188,7 @@ const DataEntry = () => {
                   {student.registrationNumber}
                 </td>
                 <td className="border border-gray-300 px-4 py-2">
-                  {student.studentsName}
+                  {student.studentName || student.studentsName}
                 </td>
                 <td className="border border-gray-300 px-4 py-2">
                   {updateco[0]?.CO1[index] || 0}

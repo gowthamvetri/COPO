@@ -8,6 +8,8 @@ const AddBatchCard = ({type,onClose,getAllBatch}) => {
     const [error,setError] = useState("");
 
     const handleSubmit = async() => {
+        console.log("Value before submit:", value);
+        
         if(!value) {
             setError(`Please Enter your ${type==="batch" ? "Batch Name" : "Sem Name"}`);
             return;
@@ -17,19 +19,24 @@ const AddBatchCard = ({type,onClose,getAllBatch}) => {
 
         if(type==="batch") {
             try {
+                console.log("Sending batch request with:", { batchName: value });
+                
                 const response = await axiosInstance.post("/add-batch",{
                     batchName : value
                 });
 
-                if(response.data && response.data.note) {
-                    getAllBatch();
-                    onclose();
-                }
-            }catch(error) {
-                if(error.response.data && error.response && error.response.data.message) {
-                    setError(error.response.data.message);
+                console.log("Response received:", response.data);
+
+                if(response.data && response.data.batch) {
                     getAllBatch();
                     onClose();
+                }
+            }catch(error) {
+                console.error("Error occurred:", error);
+                console.error("Error response:", error.response);
+                
+                if(error.response && error.response.data && error.response.data.message) {
+                    setError(error.response.data.message);
                 }
             }
         }

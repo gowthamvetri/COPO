@@ -5,7 +5,7 @@ const studentsList = new Schema({
   registrationNumber: {
     type: String,
   },
-  studentsName: {
+  studentName: {
     type: String,
   },
 });

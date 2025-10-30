@@ -100,20 +100,20 @@ const AddSubject = () => {
         subjectMapData: subjectData,
       });
 
-      console.log("Entered into main from subjectApi");
-      if (response.data && response.data.note) {
+      console.log("Response from subjectApi:", response.data);
+      if (response.data && response.data.subjectMapping) {
         alert("Data Added Successfully");
         navigate("/dashboard/mapping");
       }
       
     } catch (error) {
+      console.error("Error in subjectApi:", error);
       if (
         error.response &&
         error.response.data &&
         error.response.data.message
       ) {
         alert(error.response.data.message);
-        navigate("/dashboard/mapping");
       } else {
         alert("An unexpected error occured Please try again");
       }

@@ -2,8 +2,9 @@ const mongoose = require("mongoose");
 const Schema = mongoose.Schema;
 
 const batchSchema = new Schema({
-    batchName : {
-        type : String
+    name : {
+        type : String,
+        required: true
     },
     userId : {
         type : String,

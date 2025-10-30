@@ -7,14 +7,14 @@ import { MdDownload } from "react-icons/md";
 const Mapping = () => {
 
     const batchId = localStorage.getItem("batchId");
-    const [allBatch,setAllBatch] = useState([{}]);
+    const [allBatch,setAllBatch] = useState([]);
     const [subjectId,setSubjectId] = useState(0);
 
     console.log("batch Id from mapping page : "+batchId);
 
     useEffect(()=>{
         getAllSubjects()
-    },[],batchId);
+    },[batchId]);
 
 
     const getAllSubjects = async()=> {
@@ -52,21 +52,26 @@ const Mapping = () => {
     const [courseNumber,setCourseNumber] = useState([]);
     
     const getSubjects = () => {
-        const names = allBatch.map(subject => subject.courseName);
-        const cono = allBatch.map(subject=>subject.coNo);
+        console.log("allBatch data:", allBatch);
+        
+        if (!allBatch || allBatch.length === 0) {
+            console.log("No batch data available yet");
+            return;
+        }
+        
+        const names = allBatch.map(subject => subject.courseName || '').filter(name => name);
+        const cono = allBatch.map(subject => subject.courseCode || subject.coNo || '').filter(code => code);
+        console.log("Extracted course names:", names);
+        console.log("Extracted course codes:", cono);
         setCourseNumber(cono);
         setAllSubjects(names);
     }
 
     useEffect(()=>{
-        getAllSubjects()
-        getSubjects()
-    },[]);
-
-
-    useEffect(()=>{
-        getSubjects()
-    },[subjectId]);
+        if (allBatch && allBatch.length > 0) {
+            getSubjects();
+        }
+    },[allBatch]);
 
     const [subjectData,setSubjectData] = useState([]);
     const [supportTag,setSupportTag] = useState(false);
@@ -74,9 +79,9 @@ const Mapping = () => {
     console.log(axiosInstance.defaults.baseURL + `/getSubjectMapping/${encodeURIComponent(batchId)}/${courseNumber[subjectId]}/${subjects[subjectId]}`);
 
     const getSubjectMapping = async()=>{
-        const batchId = localStorage.getItem("batchId");
-        const encodedCourseNumber = encodeURIComponent(courseNumber[subjectId]);
-        const encodedSubjectName = encodeURIComponent(subjects[subjectId]);
+        const batchId = localStorage.getItem("batchId"); 
+        const encodedCourseNumber = encodeURIComponent(courseNumber[subjectId]); 
+        const encodedSubjectName = encodeURIComponent(subjects[subjectId]); 
 
         try {
             const token = localStorage.getItem("token"); 
@@ -111,13 +116,20 @@ const Mapping = () => {
     }
  
     useEffect(()=>{
-        console.log("verify Subject Id : " + subjectId)
-        if(subjectId!="") {
+        console.log("verify Subject Id : " + subjectId);
+        console.log("courseNumber[subjectId]:", courseNumber[subjectId]);
+        console.log("subjects[subjectId]:", subjects[subjectId]);
+        
+        if(subjectId !== "" && 
+           courseNumber.length > 0 && 
+           subjects.length > 0 &&
+           courseNumber[subjectId] && 
+           subjects[subjectId]) {
             getSubjectMapping();
+        } else {
+            console.log("Skipping getSubjectMapping - data not ready");
         }
-        getSubjectMapping();
-
-    },[subjectId,subjects,courseNumber]);
+    },[subjectId, courseNumber, subjects]);
 
     console.log("Subject Data from client Mapping side : "+JSON.stringify(subjectData,null,2));
   return (
@@ -127,17 +139,19 @@ const Mapping = () => {
                 <h2 className='text-green-700'>Select Subject</h2>
                 {console.log("selected subject : "+subjectId || 0)}
                 <select className='w-50 border rounded p-2 -mt-2 overflow-auto h-10 overflow-y-auto' value={subjectId} onChange={(e)=>{setSubjectId(e.target.value || 0)}}>
-                    {
+                    {subjects.length === 0 ? (
+                        <option value={0}>Loading subjects...</option>
+                    ) : (
                         subjects.map((subject,idx)=> {
-                            return <option value={idx}>{subject}</option>
+                            return <option key={idx} value={idx}>{subject}</option>
                         })
-                    }
+                    )}
                 </select>
                
             </div>
             <div>
-                {console.log("cono: ",courseNumber[0])}
-                <Link className='flex items-center justify-between bg-green-500 p-2 gap-3 text-white rounded' to="/dashboard/addSubject" state={{cono : courseNumber[0],courseName : subjects[subjectId],batchId : batchId}}>
+                {console.log("cono: ",courseNumber[subjectId])}
+                <Link className='flex items-center justify-between bg-green-500 p-2 gap-3 text-white rounded' to="/dashboard/addSubject" state={{cono : courseNumber[subjectId],courseName : subjects[subjectId],batchId : batchId}}>
                     <h2 className='font-medium'>Add</h2>
                     <IoIosAddCircle className='text-lg text-white'/>
                 </Link>

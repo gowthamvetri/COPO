@@ -159,34 +159,43 @@ app.get("/get-user", authenticateToken, async (req, res) => {
 // Batch-data Payload
 
 app.post("/add-batch", authenticateToken, async (req, res) => {
-  const { batchName } = req.body;
-
-  const { user } = req.user;
-
-  if (!batchName) {
-    return res.status(400).json({
-      error: true,
-      message: "batchName is required",
-    });
-  }
-
   try {
+    console.log("Request body:", req.body);
+    console.log("User from token:", req.user);
+    
+    const { batchName } = req.body;
+    const { user } = req.user;
+
+    console.log("Extracted batchName:", batchName);
+    console.log("Extracted user:", user);
+
+    if (!batchName) {
+      return res.status(400).json({
+        error: true,
+        message: "batchName is required",
+      });
+    }
+
     const batch = new Batch({
-      batchName: batchName,
+      name: batchName,
       userId: user._id,
     });
 
+    console.log("Batch object before save:", batch);
     await batch.save();
+    console.log("Batch saved successfully:", batch);
 
     return res.json({
       error: false,
-      note,
-      message: "batach Added Successfully",
+      batch,
+      message: "Batch Added Successfully",
     });
   } catch (error) {
+    console.error("Error in add-batch:", error);
     return res.status(500).json({
       error: true,
       message: "Internal Server Error",
+      details: error.message
     });
   }
 });
@@ -424,13 +433,15 @@ app.post("/addSubjectMapping", authenticateToken, async (req, res) => {
 
     return res.json({
       error: false,
-      note,
-      message: "Semester Added Successfully",
+      subjectMapping,
+      message: "Subject Mapping Added Successfully",
     });
   } catch (error) {
+    console.error("Error in addSubjectMapping:", error);
     return res.status(500).json({
       error: true,
       message: "Internal Server Error",
+      details: error.message
     });
   }
 });
@@ -525,14 +536,14 @@ app.get("/get-students/:batchId", authenticateToken, async (req, res) => {
       userId: user._id,
       batchId: batchId,
     });
-    // console.log("from server Side of Students data  : " + studentsData);
+    console.log("from server Side of Students data  : " + studentsData);
     return res.json({
       error: false,
       studentsData,
-      message: "All subject Mapping Data recieved successfully",
+      message: "All student Data received successfully",
     });
   } catch (error) {
-    console.log("Error from getSubjectMapping " + error);
+    console.log("Error from getStudents " + error);
     return res.status(500).json({
       error: true,
       message: "Internal Server Error",

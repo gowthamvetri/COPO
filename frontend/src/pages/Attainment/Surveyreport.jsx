@@ -73,16 +73,28 @@ const Surveyreport = () => {
   const [courseNumber, setCourseNumber] = useState([]);
 
   const getSubjects = () => {
-    const names = allBatch.map((subject) => subject.courseName);
-    const cono = allBatch.map((subject) => subject.coNo);
+    if (!allBatch || allBatch.length === 0) {
+      console.log("No batch data available yet");
+      return;
+    }
+    
+    const names = allBatch.map((subject) => subject.courseName || '').filter(name => name);
+    const cono = allBatch.map((subject) => subject.courseCode || subject.coNo || '').filter(code => code);
     setCourseNumber(cono);
     setAllSubjects(names);
   };
 
   useEffect(() => {
-    getAllSubjects();
-    getSubjects();
+    if (batchId) {
+      getAllSubjects();
+    }
   }, [batchId]);
+
+  useEffect(() => {
+    if (allBatch && allBatch.length > 0) {
+      getSubjects();
+    }
+  }, [allBatch]);
 
   // File Reading 
   const [openModal,setOpenModal] = useState(false);

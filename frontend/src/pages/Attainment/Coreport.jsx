@@ -70,21 +70,34 @@ const Coreport = () => {
   const [courseNumber, setCourseNumber] = useState([]);
 
   const getSubjects = () => {
-    const names = allBatch.map((subject) => subject.courseName);
-    const cono = allBatch.map((subject) => subject.coNo);
+    if (!allBatch || allBatch.length === 0) {
+      console.log("No batch data available yet");
+      return;
+    }
+    
+    const names = allBatch.map((subject) => subject.courseName || '').filter(name => name);
+    const cono = allBatch.map((subject) => subject.courseCode || subject.coNo || '').filter(code => code);
     setCourseNumber(cono);
     setAllSubjects(names);
 
   };
+  
   useEffect(() => {
-    getAllSubjects();
-    getSubjects();
+    if (batchId) {
+      getAllSubjects();
+    }
   }, [batchId]);
+
+  useEffect(() => {
+    if (allBatch && allBatch.length > 0) {
+      getSubjects();
+    }
+  }, [allBatch]);
 
   // level Selection
   const [openLvl, setOpenLvl] = useState(false);
 
-  const [iatLevel, setIatLevel] = useState();
+  const [iatLevel, setIatLevel] = useState(); 
   const [semLevel, setSemLevel] = useState();
 
   //   Client Side
@@ -105,13 +118,28 @@ const Coreport = () => {
       if (response.data.error) {
         console.error("Failed to fetch reports:", response.data.message);
         alert("Failed to fetch reports.");
-      } else {
-        console.log("Reports fetched successfully:", response.data.reports);
-        alert("Reports fetched successfully.");
-        setReports(response.data.reports);
+        return;
+      } 
+      
+      if (!response.data.reports || response.data.reports.length === 0) {
+        console.error("No reports found");
+        alert("No reports found for this subject.");
+        return;
+      }
+
+      console.log("Reports fetched successfully:", response.data.reports);
+      alert("Reports fetched successfully.");
+      setReports(response.data.reports);
+      
+      // Safely access reports with validation
+      if (response.data.reports[0] && response.data.reports[0].report) {
         setIatReport(response.data.reports[0].report);
+      }
+      
+      if (response.data.reports[1] && response.data.reports[1].report) {
         setSemReport(response.data.reports[1].report);
       }
+      
     } catch (error) {
       console.error("Error fetching reports:", error);
       alert("An error occurred while fetching the reports.");
@@ -143,14 +171,25 @@ const Coreport = () => {
       return;
     }
 
+    // Validate that reports exist before calculating
+    if (!iatReport || Object.keys(iatReport).length === 0) {
+      alert("IAT report data is missing. Please ensure reports are loaded.");
+      return;
+    }
+
+    if (!semReport || Object.keys(semReport).length === 0) {
+      alert("SEM report data is missing. Please ensure reports are loaded.");
+      return;
+    }
+
     console.log("CO1:",semReport.CO1);
     
-    setCO1(iatReport.CO1 * (iatLvl / 100) + semReport.CO1 * (semLvl / 100));
-    setCO2(iatReport.CO2 * (iatLvl / 100) + semReport.CO2 * (semLvl / 100));
-    setCO3(iatReport.CO3 * (iatLvl / 100) + semReport.CO3 * (semLvl / 100));
-    setCO4(iatReport.CO4 * (iatLvl / 100) + semReport.CO4 * (semLvl / 100));
-    setCO5(iatReport.CO5 * (iatLvl / 100) + semReport.CO5 * (semLvl / 100));
-    setCO6(iatReport.CO6 * (iatLvl / 100) + semReport.CO6 * (semLvl / 100));
+    setCO1((iatReport.CO1 || 0) * (iatLvl / 100) + (semReport.CO1 || 0) * (semLvl / 100));
+    setCO2((iatReport.CO2 || 0) * (iatLvl / 100) + (semReport.CO2 || 0) * (semLvl / 100));
+    setCO3((iatReport.CO3 || 0) * (iatLvl / 100) + (semReport.CO3 || 0) * (semLvl / 100));
+    setCO4((iatReport.CO4 || 0) * (iatLvl / 100) + (semReport.CO4 || 0) * (semLvl / 100));
+    setCO5((iatReport.CO5 || 0) * (iatLvl / 100) + (semReport.CO5 || 0) * (semLvl / 100));
+    setCO6((iatReport.CO6 || 0) * (iatLvl / 100) + (semReport.CO6 || 0) * (semLvl / 100));
 
     console.log("CO1 : ",CO1);
     setOpenLvl(false);
@@ -199,8 +238,8 @@ const Coreport = () => {
               setBatchId(e.target.value);
             }}
           >
-            {allBatches.map(({ _id, batchName }) => {
-              return <option value={_id}>{batchName}</option>;
+            {allBatches.map(({ _id, name }) => {
+              return <option value={_id}>{name}</option>;
             })}
           </select>
         </div>
